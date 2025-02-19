@@ -1,89 +1,164 @@
 package com.example.circulariconview;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.*;
 import android.util.AttributeSet;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.MotionEvent;
-import android.view.View;
 
-import androidx.annotation.Nullable;
-
-import java.util.Arrays;
 import java.util.List;
 
-public class CircularIconView extends View {
-
-    private List<Integer> iconResIds = Arrays.asList(
-            R.drawable.ic_chrome, R.drawable.ic_youtube, R.drawable.ic_snapchat,
-            R.drawable.ic_discord, R.drawable.ic_tiktok, R.drawable.ic_tinder,
-            R.drawable.ic_spotify, R.drawable.ic_google_maps
-    );
-
-    private Bitmap avatarBitmap;
-    private List<Bitmap> iconBitmaps;
+public class CircularIconView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
+    private List<AppItem> appItems;
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint avatarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Bitmap avatarBitmap;
+    private Thread drawThread;
+    private boolean isRunning = false;
+    private float rotationAngle = 0f;
+    private float rotationSpeed = 2.5f; // Điều chỉnh tốc độ xoay
+    private OnItemClickListener itemClickListener;
 
-    private float rotationAngle = 0f; // Góc quay hiện tại của icon
-    private ValueAnimator rotationAnimator;
-
-    public CircularIconView(Context context, @Nullable AttributeSet attrs) {
-        super(context, attrs);
-        loadBitmaps();
-        setupRotationAnimation();
-    }
-
-    private void loadBitmaps() {
+    public CircularIconView(Context context) {
+        super(context);
+        getHolder().addCallback(this);
         avatarBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.avatar);
-        iconBitmaps = new java.util.ArrayList<>();
-        for (int resId : iconResIds) {
-            iconBitmaps.add(BitmapFactory.decodeResource(getResources(), resId));
-        }
     }
 
-    private void setupRotationAnimation() {
-        rotationAnimator = ValueAnimator.ofFloat(0, 360);
-        rotationAnimator.setDuration(5000); // Quay trong 5 giây
-        rotationAnimator.setRepeatCount(ValueAnimator.INFINITE);
-        rotationAnimator.setInterpolator(new android.view.animation.LinearInterpolator());
-        rotationAnimator.addUpdateListener(animation -> {
-            rotationAngle = (float) animation.getAnimatedValue();
-            invalidate();
-        });
-        rotationAnimator.start();
+    public CircularIconView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        getHolder().addCallback(this);
+
+        // Bật chế độ trong suốt
+        setZOrderOnTop(true);
+        getHolder().setFormat(PixelFormat.TRANSLUCENT);
+
+        avatarBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.avatar);
+    }
+
+
+    // Đăng ký danh sách icon động
+    public void setAppItems(List<AppItem> appItems) {
+        this.appItems = appItems;
+    }
+
+    // Interface xử lý sự kiện click
+    public interface OnItemClickListener {
+        void onItemClick(AppItem item);
+    }
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.itemClickListener = listener;
+    }
+
+    // Xử lý chạm vào icon
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            float x = event.getX();
+            float y = event.getY();
+
+            for (AppItem app : appItems) {
+                if (app.bounds.contains(x, y)) {
+                    if (itemClickListener != null) {
+                        itemClickListener.onItemClick(app);
+                    }
+                    return true;
+                }
+            }
+
+            // Chạm vào khoảng trống sẽ dừng hoặc tiếp tục xoay
+            isRunning = !isRunning;
+            if (isRunning) {
+                startDrawing();
+            }
+            return true;
+        }
+        return super.onTouchEvent(event);
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
+    public void surfaceCreated(SurfaceHolder holder) {
+        isRunning = true;
+        startDrawing();
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        isRunning = false;
+        try {
+            if (drawThread != null) {
+                drawThread.join();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void startDrawing() {
+        drawThread = new Thread(this);
+        drawThread.start();
+    }
+
+    @Override
+    public void run() {
+        while (isRunning) {
+            long startTime = System.currentTimeMillis();
+
+            // Vẽ lại SurfaceView
+            drawSurface();
+
+            long timeDiff = System.currentTimeMillis() - startTime;
+            long sleepTime = Math.max(16 - timeDiff, 0); // Giữ FPS khoảng 60
+            try {
+                Thread.sleep(sleepTime);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void drawSurface() {
+        SurfaceHolder holder = getHolder();
+        Canvas canvas = holder.lockCanvas();
+        if (canvas == null) return;
+
+        // Xóa màn hình
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+
 
         float centerX = getWidth() / 2f;
         float centerY = getHeight() / 2f;
         float radius = Math.min(getWidth(), getHeight()) / 3f;
 
-        // Vẽ ảnh đại diện hình tròn
+        // Vẽ avatar ở giữa
         float avatarSize = radius;
         Bitmap circleAvatar = getCircularBitmap(avatarBitmap, (int) avatarSize);
         canvas.drawBitmap(circleAvatar, centerX - avatarSize / 2, centerY - avatarSize / 2, avatarPaint);
 
-        // Vẽ các icon theo vòng tròn và xoay
-        float angleStep = 360f / iconBitmaps.size();
+        // Vẽ icon xoay xung quanh
+        float angleStep = 360f / appItems.size();
         float iconSize = radius * 0.4f;
 
-        canvas.save();
-        canvas.rotate(rotationAngle, centerX, centerY); // Xoay toàn bộ nhóm icon
-
-        for (int i = 0; i < iconBitmaps.size(); i++) {
-            double angle = Math.toRadians(angleStep * i);
+        for (int i = 0; i < appItems.size(); i++) {
+            AppItem app = appItems.get(i);
+            double angle = Math.toRadians(angleStep * i + rotationAngle);
             float iconX = (float) (centerX + radius * Math.cos(angle)) - iconSize / 2;
             float iconY = (float) (centerY + radius * Math.sin(angle)) - iconSize / 2;
 
-            RectF iconRect = new RectF(iconX, iconY, iconX + iconSize, iconY + iconSize);
-            canvas.drawBitmap(iconBitmaps.get(i), null, iconRect, paint);
+            // Cập nhật vị trí icon
+            app.bounds.set(iconX, iconY, iconX + iconSize, iconY + iconSize);
+
+            // Vẽ icon
+            canvas.drawBitmap(app.icon, null, app.bounds, paint);
         }
 
-        canvas.restore();
+        // Xoay tiếp
+        rotationAngle += rotationSpeed;
+        if (rotationAngle >= 360) rotationAngle -= 360;
+
+        holder.unlockCanvasAndPost(canvas);
     }
 
     // Tạo avatar hình tròn
@@ -105,17 +180,8 @@ public class CircularIconView extends View {
         return output;
     }
 
-    // Xử lý chạm để xoay icon
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (rotationAnimator.isRunning()) {
-                rotationAnimator.pause(); // Dừng xoay khi chạm vào
-            } else {
-                rotationAnimator.start(); // Tiếp tục xoay nếu đang dừng
-            }
-            return true;
-        }
-        return super.onTouchEvent(event);
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        // Không cần xử lý
     }
 }
