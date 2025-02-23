@@ -86,6 +86,36 @@ public class CircularIconView extends View {
         canvas.restore();
     }
 
+    public Bitmap getIconsBitmap() {
+        int size = Math.min(getWidth(), getHeight()); // Lấy kích thước nhỏ nhất làm khung vẽ
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        float centerX = size / 2f;
+        float centerY = size / 2f;
+        float radius = size / 3f;
+
+        float angleStep = 360f / iconBitmaps.size();
+        float iconSize = radius * 0.4f;
+
+        canvas.save();
+        canvas.rotate(rotationAngle, centerX, centerY); // Xoay toàn bộ nhóm icon
+
+        for (int i = 0; i < iconBitmaps.size(); i++) {
+            double angle = Math.toRadians(angleStep * i);
+            float iconX = (float) (centerX + radius * Math.cos(angle)) - iconSize / 2;
+            float iconY = (float) (centerY + radius * Math.sin(angle)) - iconSize / 2;
+
+            RectF iconRect = new RectF(iconX, iconY, iconX + iconSize, iconY + iconSize);
+            canvas.drawBitmap(iconBitmaps.get(i), null, iconRect, paint);
+        }
+
+        canvas.restore();
+
+        return bitmap;
+    }
+
+
     // Tạo avatar hình tròn
     private Bitmap getCircularBitmap(Bitmap bitmap, int size) {
         Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -105,17 +135,4 @@ public class CircularIconView extends View {
         return output;
     }
 
-    // Xử lý chạm để xoay icon
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (rotationAnimator.isRunning()) {
-                rotationAnimator.pause(); // Dừng xoay khi chạm vào
-            } else {
-                rotationAnimator.start(); // Tiếp tục xoay nếu đang dừng
-            }
-            return true;
-        }
-        return super.onTouchEvent(event);
-    }
 }

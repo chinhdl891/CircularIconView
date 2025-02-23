@@ -1,0 +1,10 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="280dp"
+    android:minHeight="280dp"
+    android:maxWidth="280dp"
+    android:maxHeight="280dp"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_circular_icon"
+    android:previewImage="@drawable/avatar"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />
