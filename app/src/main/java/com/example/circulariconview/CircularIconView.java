@@ -86,6 +86,39 @@ public class CircularIconView extends View {
         canvas.restore();
     }
 
+
+    public Bitmap exportAvatarBitmap() {
+        int viewSize = Math.min(getWidth(), getHeight()); // Kích thước của View (hình vuông)
+
+        if (viewSize == 0 || avatarBitmap == null) {
+            return null; // Tránh lỗi khi View chưa vẽ xong
+        }
+
+        Bitmap output = Bitmap.createBitmap(viewSize, viewSize, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+
+        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setFilterBitmap(true);
+        paint.setDither(true);
+
+        // Tính toán kích thước avatar và căn giữa
+        int avatarSize = (int) (viewSize * 0.4f); // 60% kích thước View để căn giữa
+        int left = (viewSize - avatarSize) / 2;
+        int top = (viewSize - avatarSize) / 2;
+
+        // Vẽ hình tròn làm khung
+        canvas.drawCircle(viewSize / 2f, viewSize / 2f, avatarSize / 2f, paint);
+
+        // Sử dụng PorterDuff để cắt hình avatar theo hình tròn
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+
+        // Scale ảnh avatar và vẽ vào hình tròn
+        Bitmap scaledAvatar = Bitmap.createScaledBitmap(avatarBitmap, avatarSize, avatarSize, false);
+        canvas.drawBitmap(scaledAvatar, left, top, paint);
+
+        return output;
+    }
+
     public Bitmap getIconsBitmap() {
         int size = Math.min(getWidth(), getHeight()); // Lấy kích thước nhỏ nhất làm khung vẽ
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);

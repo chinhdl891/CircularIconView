@@ -1,12 +1,11 @@
 package com.example.circulariconview
 
-import GifCreator.createGifFromFrames
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
-import com.bumptech.glide.util.Util
+import com.example.circulariconview.GifCreator.saveFrameToFile
 
 
 class MainActivity : AppCompatActivity() {
@@ -19,9 +18,10 @@ class MainActivity : AppCompatActivity() {
 
         val imageViewResult = findViewById<ImageView>(R.id.imv_result)
         findViewById<Button>(R.id.tv_update_widget).setOnClickListener {
-            val bitmap = criCircularIconView.iconsBitmap
-            createGifFromFrames(this, bitmap, "rotating_image.gif")
-
+            val bitmapAvt = criCircularIconView.exportAvatarBitmap()
+            val bitmapRotate = criCircularIconView.iconsBitmap
+            saveFrameToFile(this, bitmapAvt, 0);
+            saveFrameToFile(this, bitmapRotate, 1);
         }
 
         imageViewResult.setOnClickListener {

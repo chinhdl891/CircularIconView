@@ -1,3 +1,5 @@
+package com.example.circulariconview
+
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -10,7 +12,7 @@ import java.io.FileOutputStream
 object GifCreator {
     private const val TAG = "GifCreator"
 
-    private fun saveFrameToFile(context: Context, bitmap: Bitmap, frameIndex: Int): String {
+    fun saveFrameToFile(context: Context, bitmap: Bitmap, frameIndex: Int): String {
         val frameDir = File(context.cacheDir, "frames")
         if (!frameDir.exists()) frameDir.mkdirs()
 
@@ -19,6 +21,7 @@ object GifCreator {
             FileOutputStream(frameFile).use { fos ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
             }
+            Log.d(TAG, "✅ Lưu frame $frameIndex thành công" +   frameFile.absolutePath)
             frameFile.absolutePath
         } catch (e: Exception) {
             Log.e(TAG, "❌ Lỗi lưu frame $frameIndex: ${e.message}")
