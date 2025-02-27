@@ -1,13 +1,18 @@
 package com.example.circulariconview
 
+import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.widget.Button
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 
 
 class MainActivity : AppCompatActivity() {
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -82,7 +87,18 @@ class MainActivity : AppCompatActivity() {
             openApp(appItem.packageName)
         }
 
+        val btnExport = findViewById<Button>(R.id.btn_export)
+        val imvList = findViewById<ImageView>(R.id.imv_result_list)
+        val imvAvatar = findViewById<ImageView>(R.id.imv_result_avatar)
 
+        btnExport.setOnClickListener {
+            val bitmaps: Pair<Bitmap, Bitmap> = circularView.iconsAndAvatarBitmaps
+            val listIconBitmap = bitmaps.first
+            val avatarBitmap = bitmaps.second
+            imvList.setImageBitmap(listIconBitmap)
+            imvAvatar.setImageBitmap(avatarBitmap)
+
+        }
     }
 
     private fun openApp(packageName: String) {

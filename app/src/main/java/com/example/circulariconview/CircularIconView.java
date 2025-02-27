@@ -3,11 +3,14 @@ package com.example.circulariconview;
 import android.content.Context;
 import android.graphics.*;
 import android.util.AttributeSet;
+
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.MotionEvent;
 
 import java.util.List;
+
+import kotlin.Pair;
 
 public class CircularIconView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
     private List<AppItem> appItems;
@@ -179,6 +182,54 @@ public class CircularIconView extends SurfaceView implements SurfaceHolder.Callb
 
         return output;
     }
+    public Pair<Bitmap, Bitmap> getIconsAndAvatarBitmaps() {
+        return new Pair<>(getListIconBitmap(), getAvatarBitmap());
+    }
+
+    private Bitmap getListIconBitmap() {
+        int size = Math.min(getWidth(), getHeight()); // Kích thước phù hợp với màn hình
+        Bitmap listBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(listBitmap);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        float centerX = size / 2f;
+        float centerY = size / 2f;
+        float radius = size / 3f;
+        float iconSize = radius * 0.4f;
+        float angleStep = 360f / appItems.size();
+
+        for (int i = 0; i < appItems.size(); i++) {
+            AppItem app = appItems.get(i);
+            double angle = Math.toRadians(angleStep * i + rotationAngle);
+            float iconX = (float) (centerX + radius * Math.cos(angle)) - iconSize / 2;
+            float iconY = (float) (centerY + radius * Math.sin(angle)) - iconSize / 2;
+
+            RectF bounds = new RectF(iconX, iconY, iconX + iconSize, iconY + iconSize);
+            canvas.drawBitmap(app.icon, null, bounds, paint);
+        }
+
+        return listBitmap;
+    }
+
+
+    private Bitmap getAvatarBitmap() {
+        int size = Math.min(getWidth(), getHeight()); // Kích thước bằng với listIcon
+        Bitmap avatarCanvasBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(avatarCanvasBitmap);
+
+        // Avatar nhỏ hơn (ví dụ: chiếm 1/3 kích thước)
+        int avatarSize = size / 3;
+        Bitmap circularAvatar = getCircularBitmap(avatarBitmap, avatarSize);
+
+        float centerX = (size - avatarSize) / 2f;
+        float centerY = (size - avatarSize) / 2f;
+
+        // Vẽ avatar vào chính giữa
+        canvas.drawBitmap(circularAvatar, centerX, centerY, null);
+
+        return avatarCanvasBitmap;
+    }
+
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
